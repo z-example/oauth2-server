@@ -9,7 +9,7 @@ package org.example.oauth2.grant.code;
  * https://tools.ietf.org/html/rfc6749#page-24
  */
 public class AuthorizationRequest {
-    public String response_type;//code, token
+    public String response_type;//必须为code
     public String client_id;
     public String scope; // OPTIONAL
     public String redirect_uri; // OPTIONAL

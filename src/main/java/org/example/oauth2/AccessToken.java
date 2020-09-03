@@ -10,4 +10,10 @@ public class AccessToken {
     public int expires_in;//REQUIRED
 
     public String refresh_token;// Client credentials grant和Implicit grant时必须为空
+
+    public String scope;//OPTIONAL space-delimited
+    public String state;//implicit grant下是REQUIRED
+
+    public String clientId;// 该字段不返回
+
 }

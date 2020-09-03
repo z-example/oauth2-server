@@ -10,6 +10,6 @@ public interface TokenGenerator {
 
     AccessToken generate(String clientId, String username);
 
-    AccessToken refresh(AccessToken token);
+    AccessToken refresh(String clientId, String refreshToken);
     
 }

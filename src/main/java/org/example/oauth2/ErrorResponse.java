@@ -10,6 +10,9 @@ public class ErrorResponse {
 
     public static final String ERROR_INVALID_REQUEST = "invalid_request";
     public static final String ERROR_INVALID_CLIENT = "invalid_client";
+    // The provided authorization grant (e.g., authorization code, resource owner credentials)
+    // or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization
+    // request, or was issued to another client.
     public static final String ERROR_INVALID_GRANT = "invalid_grant";
     public static final String ERROR_UNAUTHORIZED_CLIENT = "unauthorized_client";
     public static final String ERROR_UNSUPPORTED_GRANT_TYPE = "unsupported_grant_type";
