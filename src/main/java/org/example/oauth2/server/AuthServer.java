@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.javalin.Javalin;
 import io.javalin.core.security.BasicAuthCredentials;
+import io.javalin.http.Handler;
 import io.javalin.plugin.json.JavalinJson;
 import org.apache.commons.lang3.StringUtils;
 import org.example.oauth2.AccessToken;
@@ -11,7 +12,6 @@ import org.example.oauth2.ErrorResponse;
 import org.example.oauth2.model.AuthorizationCode;
 import org.example.oauth2.model.Client;
 
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,7 +62,7 @@ public class AuthServer {
                 ctx.render("/error.html", model);
                 return;
             }
-            System.out.println(ctx.queryString());//eg: client_id=000000&return_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback&state=xyz&scope=all
+            System.out.println(ctx.queryString());//eg: client_id=100000&return_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback&state=xyz&scope=all
             // 注意要保留所有参数信息
             ctx.sessionAttribute("queryString", ctx.queryString());
             ctx.render("/login.html");//html默认使用Thymeleaf引擎
@@ -77,7 +77,7 @@ public class AuthServer {
             if (service.verifyUser(username, password)) {
                 ctx.sessionAttribute("username", username);
                 // 将用户导向授权页面
-                ctx.redirect("/auth?" + queryString);
+                ctx.redirect("/authorize?" + queryString);
             } else {
 //                ctx.status(400).json(new ErrorResponse("invalid_username_or_password"));
                 // 将用户导向登录页面
@@ -86,31 +86,21 @@ public class AuthServer {
             ctx.sessionAttribute("queryString", "");
         });
 
-        // 认证服务器: 用户授权页面
-        app.get("/auth", ctx -> {
-            ctx.sessionAttribute("queryString", ctx.queryString());
-            ctx.render("/auth.html");
-        });
 
-        // 认证服务器: 处理用户授权页面授权请求
-        app.post("/auth", ctx -> {
-            String queryString = ctx.sessionAttribute("queryString");
-            ctx.sessionAttribute("auth", ctx.formParam("auth"));
-            ctx.redirect("/authorize?" + queryString);// GET /authorize?...
-            ctx.sessionAttribute("queryString", "");
-        });
-
-        // 认证服务器OAuth2规范: 处理获取用户授权请求
-        app.get("/authorize", ctx -> {
-            String loginUsername = ctx.sessionAttribute("username");
+        Handler authorizeHandler = ctx -> {
             String client_id = ctx.queryParam("client_id");//必选项
             String response_type = ctx.queryParam("response_type");//必选项
             String redirect_uri = ctx.queryParam("redirect_uri");//可选项 (注册APP时, 已经填写了uri)
             String state = ctx.queryParam("state");
             String scope = ctx.queryParam("scope", "all");//all
+            String withLogin = ctx.queryParam("with_login");//登录并授权
             // 必须参数, 先验证
             Client client = service.getClient(client_id);
-            if (client == null || !StringUtils.equalsAny(response_type, "token", "code")) {
+            if (client == null) {
+                ctx.json(ErrorResponse.INVALID_CLIENT);
+                return;
+            }
+            if (!StringUtils.equalsAny(response_type, "token", "code")) {
                 ctx.json(ErrorResponse.INVALID_REQUEST);
                 return;
             }
@@ -120,26 +110,35 @@ public class AuthServer {
                 ctx.json(ErrorResponse.INVALID_REQUEST);
                 return;
             }
-
-            // 如果用户还未登录认证服务器, 则重定向到登录页面
-            if (StringUtils.isEmpty(loginUsername)) {
-                System.out.println("用户未登录认证服务器, 将用户导向认证服务器登录页面");
+            if (!service.verifyScope(client_id, scope)) {
+                ctx.json(ErrorResponse.INVALID_SCOPE);
+                return;
+            }
+            // 登录并授权
+            if ("y".equals(withLogin)) {
+                String username = ctx.formParam("username");
+                String password = ctx.formParam("password");
+                if (service.verifyUser(username, password)) {
+                    ctx.sessionAttribute("username", username);
+                } else {
+                    ctx.render("/authorize.html");
+                    return;
+                }
+            }
+            String loginUsername = ctx.sessionAttribute("username");
+            // 如果用户还未登录认证服务器(或者申请的权限不是最基本权限), 则重定向到登录页面
+            if (StringUtils.isEmpty(loginUsername) /*|| !"user:about_me".equals(scope)*/) {
+                // 用户未登录认证服务器, 将用户导向认证服务器登录页面
                 // 注意: 将所有参数也传递给/login
-                ctx.redirect("/login?" + ctx.queryString());
+//                ctx.redirect("/login?" + ctx.queryString());
+                // 有些平台会直接渲染登录页, 不进行跳转
+                ctx.sessionAttribute("queryString", ctx.queryString());
+                ctx.render("/authorize.html");
                 return;
             }
-            // 如果为经过授权步骤, 则跳转到授权页面
-            String auth = ctx.sessionAttribute("auth");
-            if (!"allow".equals(auth)) {
-                String url = URLEncoder.encode(redirect_uri);
-                ctx.redirect("/auth?" + ctx.queryString());
-                return;
-            }
-            // 注意: 这里需要删除授权标记, 再次获取授权码时依旧需要用户授权
-            ctx.sessionAttribute("auth", null);
             // 简化授权
             if ("token".equals(response_type)) {
-                // http://localhost:7000/authorize?response_type=token&client_id=000000&state=xyz&redirect_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback
+                // http://localhost:7000/authorize?response_type=token&client_id=100000&state=xyz&redirect_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback
                 StringBuilder urlBuilder = new StringBuilder(redirect_uri);
                 // 验证 scope
                 if (!service.verifyScope(client.clientId, scope)) {
@@ -163,7 +162,7 @@ public class AuthServer {
 
             // 授权码授权1: 获取授权码
             if ("code".equals(response_type)) {
-                //http://localhost:7000/authorize?client_id=000000&response_type=code&scope=user%3Aabout_me
+                //http://localhost:7000/authorize?client_id=100000&response_type=code&scope=user%3Aabout_me
                 // 生成并存储授权码, 授权码是一次性有效性的
                 AuthorizationCode code = service.generateCode(client_id, scope, loginUsername);
                 StringBuilder urlBuilder = new StringBuilder(redirect_uri);
@@ -175,8 +174,12 @@ public class AuthServer {
                 ctx.redirect(urlBuilder.toString(), 302);
                 return;
             }
-
-        });
+            ctx.json(ErrorResponse.INVALID_REQUEST);
+        };
+        // 认证服务器OAuth2规范: 处理获取用户授权请求
+        app.get("/authorize", authorizeHandler);
+        // 认证服务器: 处理用户授权页面授权请求
+        app.post("/authorize", authorizeHandler);
 
         // 认证服务器OAuth2规范: 申请令牌请求
         app.post("/token", ctx -> {
@@ -217,7 +220,7 @@ public class AuthServer {
 
             // 授权码授权2 : 通过授权码获取token (返回JSON或者通过redirect_uri传递参数)
             if ("authorization_code".equals(grant_type)) {
-                // curl -H 'Authorization: MDAwMDAwOjAwMDAwMA==' -d "grant_type=authorization_code&code=hvAWMVBeuenxqrjoueNiVj&redirect_uri=http://localhost:7000/callback" -X POST http://localhost:7000/token
+                // curl -H 'Authorization: MTAwMDAwOmh2QVdNVkJldWVueHFyam91ZU5pVmo=' -d "grant_type=authorization_code&code=hvAWMVBeuenxqrjoueNiVj&redirect_uri=http://localhost:7000/callback" -X POST http://localhost:7000/token
                 String code = ctx.formParam("code");//必须
                 String redirect_uri = ctx.formParam("redirect_uri");//可选
                 Client client = service.getClient(bac.getUsername());

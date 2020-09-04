@@ -23,8 +23,8 @@ public class ExampleAuthService implements AuthService {
 
     public ExampleAuthService() {
         clientStore.save(new Client() {{
-            clientId = "000000";
-            clientSecret = "000000";
+            clientId = "100000";
+            clientSecret = "hvAWMVBeuenxqrjoueNiVj";
             grantTypes = "token";
             redirectUri = "http://localhost:7000/callback";
         }});
@@ -37,6 +37,7 @@ public class ExampleAuthService implements AuthService {
 
     @Override
     public boolean verifyUser(String username, String password) {
+        // TODO 这里需要自己实现, 比如查询数据库验证用户
         return true;
     }
 
@@ -59,6 +60,7 @@ public class ExampleAuthService implements AuthService {
 
     @Override
     public boolean verifyScope(String clientId, String scope) {
+        // TODO 这里需要自己实现
         return true;
     }
 
