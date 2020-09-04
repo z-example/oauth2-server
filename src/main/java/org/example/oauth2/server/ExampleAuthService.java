@@ -16,9 +16,10 @@ import java.util.Date;
  */
 public class ExampleAuthService implements AuthService {
 
-    private static CodeStore codeStore = CodeStore.inMemoryStore();
-    private static TokenStore tokenStore = TokenStore.inMemoryStore();
-    private static ClientStore clientStore = ClientStore.inMemoryStore();
+    // 以下三个接口需要自己实现, 以持久化到数据库中
+    private static final CodeStore codeStore = CodeStore.inMemoryStore();
+    private static final TokenStore tokenStore = TokenStore.inMemoryStore();
+    private static final ClientStore clientStore = ClientStore.inMemoryStore();
 
     public ExampleAuthService() {
         clientStore.save(new Client() {{

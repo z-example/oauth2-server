@@ -1,6 +1,9 @@
 package org.example.oauth2.model;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 /**
@@ -45,13 +48,24 @@ public class Client {
 
     public String userId;
 
-    public boolean verifyRedirectUri(String redirect_uri) {
-        URI defUri = URI.create(redirectUri);
-        URI uri = URI.create(redirect_uri);
-        if (Objects.equals(defUri.getHost(), uri.getHost()) && Objects.equals(defUri.getPath(), uri.getPath())) {
-            return true;
+    public boolean verifyRedirectUri(String redirectUri) {
+        if (StringUtils.isEmpty(redirectUri)) {
+            return false;
         }
-        return false;
+        try {
+            URI defUri = new URI(this.redirectUri);
+            URI uri = new URI(redirectUri);
+            if (Objects.equals(defUri.getHost(), uri.getHost()) && Objects.equals(defUri.getPath(), uri.getPath())) {
+                return true;
+            }
+            return false;
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    public boolean verifySecret(String secret) {
+        return Objects.equals(this.clientSecret, secret);
     }
 
 }

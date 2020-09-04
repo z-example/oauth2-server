@@ -6,10 +6,14 @@
 </head>
 <body>
 <form action="/auth" method="post">
-    <input type="checkbox" name="auth" value="allow"/>allow
-    <input type="checkbox" name="auth" value="deny"/>deny
-
-    <input type="submit">
+    <input type="hidden" name="auth" value="allow"/>
+    <div>
+        <input type="checkbox" name="scope" value="user:about_me" checked/>获得您的昵称、头像、性别
+    </div>
+    <div>
+        <input type="checkbox" name="scope" value="user:location"/>获得您的所在地
+    </div>
+    <input type="submit" value="allow">
 </form>
 </body>
 </html>
