@@ -12,10 +12,12 @@ import org.example.oauth2.ErrorResponse;
 import org.example.oauth2.model.AuthorizationCode;
 import org.example.oauth2.model.Client;
 
-import java.net.http.HttpClient;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static org.example.oauth2.ErrorResponse.ERROR_INVALID_REQUEST;
 
 /**
  * @author Zero
@@ -25,8 +27,6 @@ public class AuthServer {
 
 
     public static void main(String[] args) {
-        HttpClient httpClient = HttpClient.newHttpClient();
-
         Javalin app = Javalin.create().start(7000);
 
         Gson gson = new GsonBuilder().create();
@@ -43,47 +43,6 @@ public class AuthServer {
             map.put("url", ctx.fullUrl());
             map.put("body", ctx.body());
             ctx.json(map);
-        });
-
-        // 认证服务器: 用户登录页面
-        app.get("/login", ctx -> {
-            String redirectUri = ctx.queryParam("redirect_uri");
-            String clientId = ctx.queryParam("client_id");//APPID
-            Model model = new Model();
-            Client client = service.getClient(clientId);
-            if (client == null) {
-                model.setMessage("对不起, 你无权限查看该页面: 无效的clientId (appid)");
-                ctx.render("/error.html", model);
-                return;
-            }
-            // 注意: 授权码授权时, redirectUri是可选项
-            if (StringUtils.isNotEmpty(redirectUri) && !client.verifyRedirectUri(redirectUri)) {
-                model.setMessage("对不起, 你无权限查看该页面: url参数不合法");
-                ctx.render("/error.html", model);
-                return;
-            }
-            System.out.println(ctx.queryString());//eg: client_id=100000&return_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback&state=xyz&scope=all
-            // 注意要保留所有参数信息
-            ctx.sessionAttribute("queryString", ctx.queryString());
-            ctx.render("/login.html");//html默认使用Thymeleaf引擎
-        });
-
-        // 认证服务器: 用户登录验证
-        app.post("/login", ctx -> {
-            String username = ctx.formParam("username");
-            String password = ctx.formParam("password");
-            String queryString = ctx.sessionAttribute("queryString");
-            // 注意: 这些需要将参数值编码
-            if (service.verifyUser(username, password)) {
-                ctx.sessionAttribute("username", username);
-                // 将用户导向授权页面
-                ctx.redirect("/authorize?" + queryString);
-            } else {
-//                ctx.status(400).json(new ErrorResponse("invalid_username_or_password"));
-                // 将用户导向登录页面
-                ctx.redirect("/login?" + queryString);
-            }
-            ctx.sessionAttribute("queryString", "");
         });
 
 
@@ -115,8 +74,8 @@ public class AuthServer {
                 return;
             }
             // 登录并授权
-            if ("y".equals(withLogin)) {
-                String username = ctx.formParam("username");
+            String username = ctx.formParam("username");
+            if (StringUtils.isNotEmpty(username)) {
                 String password = ctx.formParam("password");
                 if (service.verifyUser(username, password)) {
                     ctx.sessionAttribute("username", username);
@@ -127,14 +86,34 @@ public class AuthServer {
             }
             String loginUsername = ctx.sessionAttribute("username");
             // 如果用户还未登录认证服务器(或者申请的权限不是最基本权限), 则重定向到登录页面
-            if (StringUtils.isEmpty(loginUsername) /*|| !"user:about_me".equals(scope)*/) {
-                // 用户未登录认证服务器, 将用户导向认证服务器登录页面
-                // 注意: 将所有参数也传递给/login
-//                ctx.redirect("/login?" + ctx.queryString());
-                // 有些平台会直接渲染登录页, 不进行跳转
+            if (StringUtils.isEmpty(loginUsername)) {
                 ctx.sessionAttribute("queryString", ctx.queryString());
+                // 用户未登录认证服务器, 用户需要登录认证服务器
+                // 方案一: 跳转到登录页面, 登录后再调整到授权页面(注意将所有参数也传递给/login)
+//                ctx.redirect("/login?" + ctx.queryString());
+                // 方案二: 直接渲染登录页, 不进行跳转
                 ctx.render("/authorize.html");
+                //
+//              ctx.render("/login_authorize.html");
                 return;
+            } else {// 如果用户已经登录, 渲染授权页面
+                if ("user:about_me".equals(scope)) {
+                    //pass
+                } else {
+                    // 如果认真服务器上授权有多个, 并且是可选的话, 那么还是需要用户勾选并确认授权的
+//                    ctx.render("/authorize.html");
+//                    return;
+                }
+            }
+            //scope是Client申请的权限, 这是用户授权的项
+            List<String> scope_items = ctx.formParams("scope_item");
+            if (scope_items.isEmpty()) {
+                // 返回错误, 或者设定最基本的权限作为默认值
+//                ctx.json(ErrorResponse.INVALID_SCOPE);
+//                return;
+                scope = "user:about_me";
+            } else {
+                scope = StringUtils.join(scope_items, ',');
             }
             // 简化授权
             if ("token".equals(response_type)) {
@@ -202,7 +181,7 @@ public class AuthServer {
                 }
                 // 验证Secret
                 if (!client.verifySecret(bac.getPassword())) {
-                    ctx.json(ErrorResponse.ERROR_UNAUTHORIZED_CLIENT);
+                    ctx.json(ErrorResponse.UNAUTHORIZED_CLIENT);
                     return;
                 }
                 // 查询数据库, 并验证用户名密码
@@ -225,19 +204,19 @@ public class AuthServer {
                 String redirect_uri = ctx.formParam("redirect_uri");//可选
                 Client client = service.getClient(bac.getUsername());
                 if (client == null) {
-                    ctx.json(ErrorResponse.ERROR_UNAUTHORIZED_CLIENT);
+                    ctx.json(ErrorResponse.UNAUTHORIZED_CLIENT);
                     return;
                 }
                 if (StringUtils.isNotEmpty(redirect_uri)) {
                     // 必须验证redirect_uri, 如果验证不通过, 不做任何处理
                     if (!client.verifyRedirectUri(redirect_uri)) {
-                        ctx.json(ErrorResponse.ERROR_INVALID_REQUEST);
+                        ctx.json(new ErrorResponse(ERROR_INVALID_REQUEST, "URI不匹配"));
                         return;
                     }
                 }
                 // 验证Secret
                 if (!Objects.equals(client.clientSecret, bac.getPassword())) {
-                    ctx.json(ErrorResponse.ERROR_UNAUTHORIZED_CLIENT);
+                    ctx.json(ErrorResponse.UNAUTHORIZED_CLIENT);
                     return;
                 }
                 // 验证授权码
@@ -264,12 +243,6 @@ public class AuthServer {
                     url.append("&token_type=").append(token.token_type);
                     url.append("&expires_in=").append(token.expires_in);
                     url.append("&refresh_token=").append(token.refresh_token);
-/*                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(url.toString()))
-                            .timeout(Duration.ofSeconds(10))
-                            .POST(HttpRequest.BodyPublishers.noBody())
-                            .build();
-                    httpClient.send(request, HttpResponse.BodyHandlers.discarding());*/
                     ctx.redirect(url.toString(), 302);
                 }
                 //授权码使用后销毁

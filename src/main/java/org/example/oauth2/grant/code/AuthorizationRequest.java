@@ -11,7 +11,8 @@ package org.example.oauth2.grant.code;
 public class AuthorizationRequest {
     public String response_type;//必须为code
     public String client_id;
-    public String scope; // OPTIONAL
+    // eg: https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/#requested-scopes-and-granted-scopes
+    public String scope; // OPTIONAL, 多个值使用空格分隔(%20). eg: scope=user:email%20user:follow
     public String redirect_uri; // OPTIONAL
     public String state; //RECOMMENDED
 }

@@ -46,6 +46,8 @@ public class Client {
     public String grantTypes;
     public String redirectUri;
 
+    public String name;// APP Name
+
     public String userId;
 
     public boolean verifyRedirectUri(String redirectUri) {

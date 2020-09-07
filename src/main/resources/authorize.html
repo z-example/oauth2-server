@@ -6,51 +6,54 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
     <!--    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>-->
 </head>
-<body>
+<body style="padding-top: 120px">
 
-<div class="ui placeholder segment">
-    <div class="ui two column very relaxed stackable grid">
-        <div class="column">
-            <div th:if="${session.username!=null}">
-                您已登录:  <span th:text="${session.username}"></span>
-                <button class="ui blue submit button" type="submit">授权</button>
+<form method="post">
+    <div class="ui placeholder segment" style="max-width: 800px; margin: 0 auto;">
+        <div class="ui two column very relaxed stackable grid">
+            <div class="column">
+                <div th:if="${session.username!=null}">
+                    您已登录: <span th:text="${session.username}"></span>
+                    <button class="ui blue submit button" type="submit">授权</button>
+                </div>
+                <!--            th:action="'/authorize?'+${session.queryString}+'&with_login=y'"-->
+                <div class="ui form" th:if="${session.username==null}">
+                    <div class="field">
+                        <label>Username</label>
+                        <div class="ui left icon input">
+                            <input type="text" name="username" placeholder="Username">
+                            <i class="user icon"></i>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Password</label>
+                        <div class="ui left icon input">
+                            <input type="password" name="password">
+                            <i class="lock icon"></i>
+                        </div>
+                    </div>
+                    <button class="ui blue submit button" type="submit">登录并授权</button>
+                </div>
             </div>
-            <form class="ui form" th:action="'/authorize?'+${session.queryString}+'&with_login=y'" method="post"
-                  th:if="${session.username==null}">
-                <div class="field">
-                    <label>Username</label>
-                    <div class="ui left icon input">
-                        <input type="text" name="username" placeholder="Username">
-                        <i class="user icon"></i>
-                    </div>
+            <div class="middle aligned column">
+                <!--   这里实际上需要根据Client请求的Scope默认选中相应的权限, 用户可以取消, 但是基本权限是必选且不可编辑的  -->
+                <div class="ui disabled checkbox">
+                    <input type="hidden" name="scope_item" value="user:about_me"/>
+                    <input type="checkbox" disabled="disabled" checked/>
+                    <label>获得您的昵称、头像、性别</label>
                 </div>
-                <div class="field">
-                    <label>Password</label>
-                    <div class="ui left icon input">
-                        <input type="password" name="password">
-                        <i class="lock icon"></i>
-                    </div>
+                <div></div>
+                <div class="ui checkbox">
+                    <input type="checkbox" name="scope_item" value="user:location">
+                    <label>获取您的所在地</label>
                 </div>
-                <button class="ui blue submit button" type="submit">登录并授权</button>
-            </form>
+            </div>
         </div>
-        <div class="middle aligned column">
-            <form action="/authorize"></form>
-            <div class="ui disabled checkbox">
-                <input type="checkbox" name="auth_scope" value="user:about_me" disabled="disabled" checked>
-                <label>获得您的昵称、头像、性别</label>
-            </div>
-            <div></div>
-            <div class="ui checkbox">
-                <input type="checkbox" name="auth_scope" value="user:location">
-                <label>获取您的所在地</label>
-            </div>
+        <div class="ui vertical divider">
+            *
         </div>
     </div>
-    <div class="ui vertical divider">
-        *
-    </div>
-</div>
+</form>
 
 </body>
 </html>

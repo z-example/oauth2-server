@@ -8,10 +8,12 @@
 <form action="/authorize" method="post">
     <input type="hidden" name="auth" value="allow"/>
     <div>
-        <input type="checkbox" name="scope" value="user:about_me" checked/>获得您的昵称、头像、性别
+        <input type="hidden" name="scope_item" value="user:about_me"/>
+        <input type="checkbox" disabled="disabled" checked/>
+        获得您的昵称、头像、性别
     </div>
     <div>
-        <input type="checkbox" name="scope" value="user:location"/>获得您的所在地
+        <input type="checkbox" name="scope_item" value="user:location"/>获得您的所在地
     </div>
     <input type="submit" value="allow">
 </form>
