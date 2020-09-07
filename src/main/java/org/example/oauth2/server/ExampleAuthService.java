@@ -84,8 +84,8 @@ public class ExampleAuthService implements AuthService {
     public AccessToken refreshToken(String clientId, String refreshToken) {
         AccessToken token = tokenStore.getByRefreshToken(clientId, refreshToken);
         String old_refresh_token = token.refresh_token;
-        token.access_token = RandomStringUtils.randomAlphabetic(16);
-        token.refresh_token = RandomStringUtils.randomAlphabetic(16);
+        token.access_token = RandomStringUtils.randomAlphabetic(22);
+        token.refresh_token = RandomStringUtils.randomAlphabetic(22);
         tokenStore.updateByRefreshToken(old_refresh_token, token);
         return token;
     }
