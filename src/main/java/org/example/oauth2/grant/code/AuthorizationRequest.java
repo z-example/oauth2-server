@@ -1,11 +1,14 @@
 package org.example.oauth2.grant.code;
 
 /**
- * <pre>
+ * Client将用户浏览器导向AuthServer的授权页面, 用户通过浏览器登录并授权
+ * <p>
+ * <blockquote><pre>
  *     GET /authorize?response_type=code&client_id=s6BhdRkqt3&state=xyz
  *         &redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb HTTP/1.1
  *     Host: server.example.com
- * </pre>
+ * </pre></blockquote>
+ *
  * https://tools.ietf.org/html/rfc6749#page-24
  */
 public class AuthorizationRequest {

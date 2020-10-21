@@ -1,6 +1,8 @@
 package org.example.oauth2.grant.implicit;
 
 /**
+ * implicit：简化模式，（不安全，适用于纯静态页面应用，基本上用不着）
+ *
  * <pre>
  *     GET /authorize?response_type=token&client_id=s6BhdRkqt3&state=xyz
  *         &redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb HTTP/1.1

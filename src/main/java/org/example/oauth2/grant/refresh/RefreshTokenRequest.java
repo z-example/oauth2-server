@@ -1,6 +1,8 @@
 package org.example.oauth2.grant.refresh;
 
 /**
+ * Client通过自编程调用API获取Token
+ *
  * <pre>
  *      POST /token HTTP/1.1
  *      Host: server.example.com
@@ -9,6 +11,8 @@ package org.example.oauth2.grant.refresh;
  *
  *      grant_type=refresh_token&refresh_token=tGzv3JOkF0XG5Qx2TlKWIA
  * </pre>
+ * <p>
+ * refresh token 主要是为了提升用户体验,  用户不用重复输入账号密码授权给Client
  */
 public class RefreshTokenRequest {
     public String grant_type;// REQUIRED.  Value MUST be set to "refresh_token".

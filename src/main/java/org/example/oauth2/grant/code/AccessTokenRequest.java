@@ -1,15 +1,17 @@
 package org.example.oauth2.grant.code;
 
 /**
- * <pre>
- * POST /token HTTP/1.1
- * Host: server.example.com
- * Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
- * Content-Type: application/x-www-form-urlencoded
+ * Client通过自编程调用API获取Token
  *
- * grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
- * &redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb
- * </pre>
+ * <blockquote><pre>
+ *      POST /token HTTP/1.1
+ *      Host: server.example.com
+ *      Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+ *      Content-Type: application/x-www-form-urlencoded
+ *
+ *      grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
+ *      &redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb
+ * </pre></blockquote>
  */
 public class AccessTokenRequest {
     public String grant_type;//必须为: authorization_code
